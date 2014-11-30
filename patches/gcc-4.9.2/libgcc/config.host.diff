@@ -1,0 +1,12 @@
+--- gcc-4.9.2/libgcc/config.host	2014-03-27 16:40:31.000000000 +0100
++++ gcc-4.9.2/libgcc/config.host	2014-11-30 14:41:34.000000000 +0100
+@@ -742,6 +742,9 @@
+ m32rle-*-linux*)
+ 	tmake_file="$tmake_file m32r/t-linux t-fdpbit"
+ 	;;
++m68k-*-amigaos*)
++	tmake_file="$tmake_file m68k/t-floatlib"
++	;;
+ m68k-*-elf* | fido-*-elf)
+ 	tmake_file="$tmake_file m68k/t-floatlib"
+ 	;;

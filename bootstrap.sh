@@ -80,7 +80,11 @@ function unpack_sources {
   apply_patches "${BINUTILS}"
   popd
 
-  unpack_clean "${GCC}" "${GCC_CORE_SRC}" "${GCC_CPP_SRC}"
+  if ((${VERSION} == 4)); then
+    unpack_clean "${GCC}" "${GCC_SRC}"
+  else
+    unpack_clean "${GCC}" "${GCC_CORE_SRC}" "${GCC_CPP_SRC}"
+  fi
   pushd "${GCC}"
   copy_non_diff "${GCC}"
   apply_patches "${GCC}"
@@ -90,6 +94,9 @@ function unpack_sources {
     unpack_clean "${GMP}" "${GMP_SRC}"
     unpack_clean "${MPC}" "${MPC_SRC}"
     unpack_clean "${MPFR}" "${MPFR_SRC}"
+    unpack_clean "${ISL}" "${ISL_SRC}"
+    unpack_clean "${CLOOG}" "${CLOOG_SRC}"
+    unpack_clean "${NEWLIB}" "${NEWLIB_SRC}"
   fi
 
   unpack_clean "${FD2SFD}" "${FD2SFD_SRC}"
@@ -164,24 +171,24 @@ function build_tools {
 
   pushd "${BUILD_DIR}"
 
-  mkdir_empty "${M4}"
-  pushd "${M4}"
-  "${SOURCES}/${M4}/configure" \
-    --prefix="${HOST_DIR}"
-  ${MAKE}
-  make install
-  ln -s m4 "${HOST_DIR}/bin/gm4"
-  popd
-
-  mkdir_empty "${GAWK}"
-  pushd "${GAWK}"
-  "${SOURCES}/${GAWK}/configure" \
-    --prefix="${HOST_DIR}"
-  ${MAKE}
-  make install
-  popd
-
   if ((${VERSION} < 4)); then
+    mkdir_empty "${M4}"
+    pushd "${M4}"
+    "${SOURCES}/${M4}/configure" \
+      --prefix="${HOST_DIR}"
+    ${MAKE}
+    make install
+    ln -s m4 "${HOST_DIR}/bin/gm4"
+    popd
+
+    mkdir_empty "${GAWK}"
+    pushd "${GAWK}"
+    "${SOURCES}/${GAWK}/configure" \
+      --prefix="${HOST_DIR}"
+    ${MAKE}
+    make install
+    popd
+
     mkdir_empty "${FLEX}"
     pushd "${FLEX}"
     "${SOURCES}/${FLEX}/configure" \
@@ -197,15 +204,15 @@ function build_tools {
     ${MAKE}
     make install
     popd
-  fi
 
-  mkdir_empty "${TEXINFO}"
-  pushd "${TEXINFO}"
-  "${SOURCES}/${TEXINFO}/configure" \
-    --prefix="${HOST_DIR}"
-  ${MAKE}
-  make install
-  popd
+    mkdir_empty "${TEXINFO}"
+    pushd "${TEXINFO}"
+    "${SOURCES}/${TEXINFO}/configure" \
+      --prefix="${HOST_DIR}"
+    ${MAKE}
+    make install
+    popd
+  fi
 
   if ((${VERSION} == 4)); then
     mkdir_empty "${GMP}"
@@ -213,6 +220,27 @@ function build_tools {
     "${SOURCES}/${GMP}/configure" \
       --prefix="${HOST_DIR}" \
       --disable-shared
+    ${MAKE}
+    make install
+    popd
+
+    mkdir_empty "${ISL}"
+    pushd "${ISL}"
+    "${SOURCES}/${ISL}/configure" \
+      --prefix="${HOST_DIR}" \
+      --disable-shared \
+      --with-gmp-prefix="${HOST_DIR}"
+    ${MAKE}
+    make install
+    popd
+
+    mkdir_empty "${CLOOG}"
+    pushd "${CLOOG}"
+    "${SOURCES}/${CLOOG}/configure" \
+      --prefix="${HOST_DIR}" \
+      --disable-shared \
+      --with-gmp-prefix="${HOST_DIR}" \
+      --with-isl-prefix="${HOST_DIR}"
     ${MAKE}
     make install
     popd
@@ -356,8 +384,8 @@ function build_binutils {
   cd "${BINUTILS}"
   CC="${CC} ${ARCH:-}" "${SOURCES}/${BINUTILS}/configure" \
     --prefix="${PREFIX}" \
-    --host="i686-linux-gnu" \
-    --target="m68k-amigaos"
+    --target="m68k-amigaos" \
+    ${BINUTILS_CONFIGURE_OPTS[*]}
   make all
   make install install-info
   popd
@@ -375,10 +403,16 @@ function build_gcc {
     --prefix="${PREFIX}" \
     --target="m68k-amigaos" \
     --enable-languages=c \
-    --with-headers="${SOURCES}/${IXEMUL}/include" \
     ${GCC_CONFIGURE_OPTS[*]}
-  make all ${FLAGS_FOR_TARGET[*]}
-  make install ${FLAGS_FOR_TARGET[*]}
+  if ((${VERSION} < 4)); then
+    make all ${FLAGS_FOR_TARGET[*]}
+    make install ${FLAGS_FOR_TARGET[*]}
+  else
+    make all-gcc ${FLAGS_FOR_TARGET[*]}
+    make all-target-libgcc ${FLAGS_FOR_TARGET[*]}
+    make install-gcc ${FLAGS_FOR_TARGET[*]}
+    make install-target-libgcc ${FLAGS_FOR_TARGET[*]}
+  fi
   popd
 
   touch "${STAMP}/build-gcc"
@@ -537,50 +571,70 @@ function build_ixemul {
 function build {
   source "${TOP_DIR}/bootstrap.conf"
 
-  # On 64-bit architecture GNU Assembler crashes writing out an object, due to
-  # (probably) miscalculated structure sizes.  There could be some other bugs
-  # lurking there in 64-bit mode, but I have little incentive chasing them.
-  # Just compile everything in 32-bit mode and forget about the issues.
-  if [ "$(uname -m)" == "x86_64" ]; then
-    ARCH="-m32"
-  fi
-
   # Take over the path -- to preserve hermetic build. 
   export PATH="/usr/bin:/bin:/usr/local/bin:/opt/local/bin"
 
-  # Make sure we always choose known compiler (from the distro) and not one
-  # in user's path that could shadow the original one.
-  CC="$(which gcc) -std=gnu89"
-  CXX="$(which g++) -std=gnu++98"
+  if ((${VERSION} < 4)); then
+    # On 64-bit architecture GNU Assembler crashes writing out an object, due to
+    # (probably) miscalculated structure sizes.  There could be some other bugs
+    # lurking there in 64-bit mode, but I have little incentive chasing them.
+    # Just compile everything in 32-bit mode and forget about the issues.
+    if [ "$(uname -m)" == "x86_64" ]; then
+      ARCH="-m32"
+    fi
 
-  # Define extra options for gcc's configure script.
-  if [ "${VERSION}" != "4" ]; then
+    # Make sure we always choose known compiler (from the distro) and not one
+    # in user's path that could shadow the original one.
+    export CC="$(which gcc) -std=gnu89"
+    export CXX="$(which g++) -std=gnu++98"
+
     # Older gcc compilers (i.e. 2.95.3 and 3.4.6) have to be tricked into
     # thinking that they're being compiled on IA-32 architecture.
     CC="${CC} ${ARCH:-}"
     CXX="${CXX} ${ARCH:-}"
     GCC_CONFIGURE_OPTS+=("--host=i686-linux-gnu" \
-                         "--build=i686-linux-gnu")
+                         "--build=i686-linux-gnu" \
+                         "--with-headers=\"${SOURCES}/${IXEMUL}/include\"")
+
+    BINUTILS_CONFIGURE_OPTS+=("--host=i686-linux-gnu")
+
+    readonly FLAGS_FOR_TARGET=( \
+        "MAKEINFO=makeinfo" \
+        "CFLAGS_FOR_TARGET=-noixemul" \
+        "AR_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-ar" \
+        "AS_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-as" \
+        "LD_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-ld" \
+        "NM_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-nm" \
+        "OBJCOPY_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-objcopy" \
+        "OBJDUMP_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-objdump" \
+        "RANLIB_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-ranlib")
   else
+    export CC="$(which gcc)"
+    export CXX="$(which g++)"
+
     # GCC 4.x requires some extra dependencies to be supplied.
     GCC_CONFIGURE_OPTS+=("--with-gmp=${HOST_DIR}" \
                          "--with-mpfr=${HOST_DIR}" \
                          "--with-mpc=${HOST_DIR}" \
-                         "--disable-shared")
+                         "--with-isl=${HOST_DIR}" \
+                         "--with-cloog=${HOST_DIR}" \
+                         "--with-newlib" \
+                         "--disable-shared" \
+                         "--without-headers" \
+                         "--disable-multilib" \
+                         "--disable-nls")
+    BINUTILS_CONFIGURE_OPTS+=("--disable-werror" \
+                              "--disable-nls")
+
+    readonly FLAGS_FOR_TARGET=( \
+        "AR_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-ar" \
+        "AS_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-as" \
+        "LD_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-ld" \
+        "NM_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-nm" \
+        "OBJCOPY_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-objcopy" \
+        "OBJDUMP_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-objdump" \
+        "RANLIB_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-ranlib")
   fi
-
-  export CC CXX
-
-  readonly FLAGS_FOR_TARGET=( \
-      "MAKEINFO=makeinfo" \
-      "CFLAGS_FOR_TARGET=-noixemul" \
-      "AR_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-ar" \
-      "AS_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-as" \
-      "LD_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-ld" \
-      "NM_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-nm" \
-      "OBJCOPY_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-objcopy" \
-      "OBJDUMP_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-objdump" \
-      "RANLIB_FOR_TARGET=${PREFIX}/bin/m68k-amigaos-ranlib")
 
   prepare_target
   unpack_sources
@@ -588,21 +642,24 @@ function build {
   export PATH="${HOST_DIR}/bin:${PATH}"
 
   build_tools
-  build_vasm
-  build_vlink
-  build_vbcc
-  install_vclib
-
+  if ((${VERSION} < 4)); then
+    build_vasm
+    build_vlink
+    build_vbcc
+    install_vclib
+  fi
   build_binutils
   build_gcc
 
   export PATH="${PREFIX}/bin:${PATH}"
 
-  process_ndk
-  install_libamiga
-  build_libnix
-  build_libm
-  build_gpp
+  if ((${VERSION} < 4)); then
+    process_ndk
+    install_libamiga
+    build_libnix
+    build_libm
+    build_gpp
+  fi
 
   # TODO: Ixemul is not suited for cross compilation very well.  The build
   # process compiles some tools with cross compiler and tries to run them
@@ -613,7 +670,7 @@ function build {
 
 function main {
   PREFIX="${TOP_DIR}/target"
-  VERSION="2"
+  VERSION="4"
 
   local action="build"
 
