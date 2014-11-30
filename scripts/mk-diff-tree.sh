@@ -2,9 +2,7 @@
 
 export LC_ALL=C
 
-diff=gdiff
-
-$diff -durq "$1.orig" "$1" | while read -a line; do
+diff -durq "../archives/$1" "$1" | while read -a line; do
   case "${line[0]}" in
     "Files")
       orig="${line[1]}"
@@ -13,7 +11,7 @@ $diff -durq "$1.orig" "$1" | while read -a line; do
       patch="${dir}/$(basename ${file}).diff"
       echo "${orig} vs. ${file} -> ${patch}"
       mkdir -p "${dir}"
-      $diff -du "${orig}" "${file}" | sed -e "s/$1.orig/$1/" >"${patch}"
+      diff -du "${orig}" "${file}" | sed -e "s,--- ../archives/$1,--- $1," >"${patch}"
       ;;
     "Only")
       file="${line[2]%:}/${line[3]}"

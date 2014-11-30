@@ -29,10 +29,10 @@ download "ftp://ftp.gnu.org/gnu/gcc/gcc-2.95.3/gcc-core-2.95.3.tar.gz"
 download "ftp://ftp.gnu.org/gnu/gcc/gcc-2.95.3/gcc-g++-2.95.3.tar.gz"
 download "ftp://ftp.gnu.org/gnu/gcc/gcc-3.4.6/gcc-core-3.4.6.tar.gz"
 download "ftp://ftp.gnu.org/gnu/gcc/gcc-3.4.6/gcc-g++-3.4.6.tar.gz"
-download "ftp://ftp.gnu.org/gnu/gcc/gcc-4.5.0/gcc-core-4.5.0.tar.gz"
-download "ftp://ftp.gnu.org/gnu/gcc/gcc-4.5.0/gcc-g++-4.5.0.tar.gz"
+download "ftp://ftp.gnu.org/gnu/gcc/gcc-4.9.2/gcc-4.9.2.tar.bz2"
 download "ftp://ftp.gnu.org/gnu/binutils/binutils-2.9.1.tar.gz"
 download "ftp://ftp.gnu.org/gnu/binutils/binutils-2.14.tar.gz"
+download "ftp://ftp.gnu.org/gnu/binutils/binutils-2.24.tar.bz2"
 
 download \
   "http://sourceforge.net/projects/flex/files/flex/2.5.4.a/flex-2.5.4a.tar.gz/download" \
@@ -58,9 +58,12 @@ download \
   "http://sourceforge.net/projects/amiga/files/ixemul.library/48.2/ixemul-src.lha/download" \
   "ixemul-48.2.lha"
 
-download "ftp://ftp.gnu.org/gnu/gmp/gmp-5.1.2.tar.bz2"
-download "ftp://ftp.gnu.org/gnu/mpc/mpc-1.0.1.tar.gz"
+download "ftp://ftp.gnu.org/gnu/gmp/gmp-6.0.0a.tar.bz2"
+download "ftp://ftp.gnu.org/gnu/mpc/mpc-1.0.2.tar.gz"
 download "ftp://ftp.gnu.org/gnu/mpfr/mpfr-3.1.2.tar.bz2"
+download "ftp://ftp.gnu.org/gnu/gmp/gmp-6.0.0a.tar.bz2"
+download "ftp://ftp.gnu.org/gnu/mpc/mpc-1.0.2.tar.gz"
+download "ftp://sourceware.org/pub/newlib/newlib-2.1.0.tar.gz"
 
 download "http://sun.hasenbraten.de/vasm/release/vasm.tar.gz"
 download "http://sun.hasenbraten.de/vlink/release/vlink.tar.gz"

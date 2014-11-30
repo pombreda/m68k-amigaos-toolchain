@@ -1,0 +1,16 @@
+--- gcc-4.9.2/gcc/config.gcc	2014-09-17 16:16:02.000000000 +0200
++++ gcc-4.9.2/gcc/config.gcc	2014-11-30 14:28:27.000000000 +0100
+@@ -1810,6 +1810,13 @@
+ 		thread_file='posix'
+ 	fi
+ 	;;
++m68k*-*-amigaos*)
++	default_m68k_cpu=68000
++	tm_file="${tm_file} m68k/m68k-none.h elfos.h m68k/m68kelf.h m68k/m68020-elf.h newlib-stdint.h"
++	extra_options="${extra_options}"
++	tm_defines="${tm_defines} MOTOROLA=1"
++	tmake_file="m68k/t-floatlib m68k/t-m68kbare m68k/t-m68kelf"
++	;;
+ m68k-*-elf* | fido-*-elf*)
+ 	case ${target} in
+ 	fido-*-elf*)
