@@ -1,0 +1,30 @@
+--- gcc-4.9.2/gcc/config/m68k/m68k.h	2014-01-02 23:23:26.000000000 +0100
++++ gcc-4.9.2/gcc/config/m68k/m68k.h	2014-11-30 17:31:19.000000000 +0100
+@@ -337,7 +337,14 @@
+    register elimination.  */
+ #define FIRST_PSEUDO_REGISTER 25
+ 
+-/* All m68k targets (except AmigaOS) use %a5 as the PIC register  */
++/* All m68k targets (except AmigaOS) use %a5 as the PIC register.
++ * On AmigaOS, we use %a4. */
++#ifndef TARGET_AMIGAOS
++#define PIC_REG A5_REG
++#else
++#define PIC_REG A4_REG
++#endif
++
+ #define PIC_OFFSET_TABLE_REGNUM				\
+   (!flag_pic ? INVALID_REGNUM				\
+    : reload_completed ? REGNO (pic_offset_table_rtx)	\
+@@ -427,7 +434,11 @@
+ /* Most m68k targets use %a6 as a frame pointer.  The AmigaOS
+    ABI uses %a6 for shared library calls, therefore the frame
+    pointer is shifted to %a5 on this target.  */
++#ifndef TARGET_AMIGAOS
+ #define FRAME_POINTER_REGNUM A6_REG
++#else
++#define FRAME_POINTER_REGNUM A5_REG
++#endif
+ 
+ /* Base register for access to arguments of the function.
+  * This isn't a hardware register. It will be eliminated to the
